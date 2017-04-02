@@ -12,7 +12,7 @@
 /db/*.sqlite3-journal
 /app/controllers/sessions_controller.rb
 /config/database.yml
-
+/config/environments/production.rb
 # Ignore all logfiles and tempfiles.
 /log/*.log
 /tmp

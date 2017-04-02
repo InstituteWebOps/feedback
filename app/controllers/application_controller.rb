@@ -4,4 +4,12 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
   include SessionsHelper
   include AngersHelper
+  after_filter :allow_iframe
+  private
+   def allow_iframe
+	response.headers.delete "X-Frame-Options"
+        response.headers.delete "X-XSS-Protection"
+        response.headers.delete "X-Content-Type-Options"
+   end
+
 end
