@@ -1,0 +1,61 @@
+class CommentsController < ApplicationController
+
+  include ApplicationHelper
+
+  def create
+    @post = Post.find(params[:post_id])
+    @comment = Comment.new
+    @comment.content = params[:comment][:content]
+    if @comment.anonymous
+      @comment.anonymous = params[:comment][:anonymous]
+    end
+    @comment.user_id = current_user.id
+    @comment.post_id = @post.id
+    tag_comment @comment
+    if @comment.save
+      @post.follows.each do |follow|
+        if follow.user_id!=current_user.id
+          @notif = Notification.new
+          @notif.user_id = follow.user_id
+          @notif.post_id = @post.id
+          @notif.notif_user = current_user.id
+          @notif.action = 'has commented on a post that you are following'
+          @notif.save
+          CommentMailer.comment_email(@comment,User.find(follow.user_id)).deliver
+        end
+      end
+      CommentMailer.comment_email(@comment,User.find(@post.user_id))
+      CommentMailer.arbit_email(@comment).deliver
+     # if User.where(usertype:'NULL').as_json.include?("id"=>@comment.user_id)
+     # end
+      if @post.following?(current_user).length==0 
+        @post.follow!(current_user) 
+      end
+      respond_to do |format|
+        format.html {redirect_to @comment}
+        format.js
+      end
+    else
+      render 'new'
+    end
+  end
+
+  def destroy
+    @comment = Comment.find(params[:id])
+    if current_user.id != User.find(@comment.user_id).id
+      @notif = Notification.new
+      @notif.user_id = User.find(@comment.user_id).id
+      @notif.post_id = Post.find(@comment.post_id).id
+      @notif.notif_user = current_user.id
+      @notif.action = 'deleted your comment on a post'
+      @notif.save
+    end
+    @post = Post.find(@comment.post_id)
+    respond_to do |format|
+      format.html {redirect_to @comment}
+      format.js
+    end
+    @comment.destroy
+  end
+
+end
